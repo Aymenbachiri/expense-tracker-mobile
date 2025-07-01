@@ -1,5 +1,10 @@
 import { Slot } from "expo-router";
+import { Providers } from "../lib/providers/providers";
 
 export default function HomeLayout(): React.JSX.Element {
-  return <Slot />;
+  return (
+    <Providers>
+      <Slot />
+    </Providers>
+  );
 }
