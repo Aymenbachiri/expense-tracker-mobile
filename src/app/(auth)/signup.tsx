@@ -1,26 +1,43 @@
+import { cn } from "@/src/lib/utils/utils";
 import { useSignUp } from "@clerk/clerk-expo";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import React, { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { z } from "zod";
+
+const signupSchema = z.object({
+  emailAddress: z.string().email("Must be a valid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+type SignupFormData = z.infer<typeof signupSchema>;
 
 export default function Signup(): React.JSX.Element {
-  const { isLoaded, signUp, setActive } = useSignUp();
   const router = useRouter();
-
-  const [emailAddress, setEmailAddress] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
+  const { isLoaded, signUp, setActive } = useSignUp();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const onSignUpPress = async () => {
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema),
+    defaultValues: { emailAddress: "", password: "" },
+  });
+
+  const onSignUpPress = async (data: SignupFormData) => {
     if (!isLoaded) return;
     setError(null);
     setLoading(true);
 
     try {
       const signUpAttempt = await signUp.create({
-        emailAddress,
-        password,
+        emailAddress: data.emailAddress,
+        password: data.password,
       });
 
       if (
@@ -42,35 +59,68 @@ export default function Signup(): React.JSX.Element {
   };
 
   return (
-    <View style={{ padding: 16 }}>
-      <Text style={{ marginBottom: 8, fontSize: 18 }}>Sign up</Text>
-      <TextInput
-        autoCapitalize="none"
-        value={emailAddress}
-        placeholder="Enter email"
-        onChangeText={setEmailAddress}
-        keyboardType="email-address"
-        style={{ borderWidth: 1, padding: 8, marginBottom: 12 }}
+    <View className="p-4">
+      <Text className="mb-6 text-center text-lg">Sign up</Text>
+      <Controller
+        control={control}
+        name="emailAddress"
+        render={({ field: { value, onChange, onBlur } }) => (
+          <>
+            <TextInput
+              autoCapitalize="none"
+              value={value}
+              placeholder="Enter email"
+              onChangeText={onChange}
+              onBlur={onBlur}
+              keyboardType="email-address"
+              className={cn(
+                "mb-1 rounded-md border p-2",
+                errors.emailAddress ? "border-red-500" : "mb-6 border-gray-300",
+              )}
+            />
+            {errors.emailAddress && (
+              <Text className="mb-6 text-red-500">
+                {errors.emailAddress.message}
+              </Text>
+            )}
+          </>
+        )}
       />
-      <TextInput
-        value={password}
-        placeholder="Enter password"
-        secureTextEntry={true}
-        onChangeText={setPassword}
-        style={{ borderWidth: 1, padding: 8, marginBottom: 12 }}
+      <Controller
+        control={control}
+        name="password"
+        render={({ field: { value, onChange, onBlur } }) => (
+          <>
+            <TextInput
+              value={value}
+              placeholder="Enter password"
+              secureTextEntry={true}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              className={cn(
+                "mb-1 rounded-md border p-2",
+                errors.password ? "border-red-500" : "mb-6 border-gray-300",
+              )}
+            />
+            {errors.password && (
+              <Text className="mb-2 text-red-500">
+                {errors.password.message}
+              </Text>
+            )}
+          </>
+        )}
       />
-      {error && <Text style={{ color: "red", marginBottom: 12 }}>{error}</Text>}
+      {error && <Text className="mb-3 text-red-500">{error}</Text>}
       <TouchableOpacity
-        onPress={onSignUpPress}
+        onPress={handleSubmit(onSignUpPress)}
         disabled={loading}
-        style={{
-          backgroundColor: loading ? "#aaa" : "#007aff",
-          padding: 12,
-          borderRadius: 6,
-        }}
+        className={cn(
+          "my-6 rounded p-3",
+          loading ? "bg-gray-400" : "bg-blue-500",
+        )}
       >
-        <Text style={{ color: "#fff", textAlign: "center" }}>
-          {loading ? "Creating account..." : "Continue"}
+        <Text className="flex items-center justify-center gap-3 text-center text-white">
+          {loading ? "Creating..." : "Create account"}
         </Text>
       </TouchableOpacity>
     </View>
