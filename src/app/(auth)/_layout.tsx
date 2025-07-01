@@ -1,8 +1,10 @@
-import { useAuth } from "@clerk/clerk-expo";
+import { useUser } from "@clerk/clerk-expo";
 import { Redirect, Stack } from "expo-router";
+import { ActivityIndicator } from "react-native";
 
 export default function AuthLayout(): React.JSX.Element {
-  const { isSignedIn } = useAuth();
+  const { isSignedIn, isLoaded } = useUser();
+  if (!isLoaded) return <ActivityIndicator />;
   if (isSignedIn) return <Redirect href={"/(tabs)"} />;
 
   return (

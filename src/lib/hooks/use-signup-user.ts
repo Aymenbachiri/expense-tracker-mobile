@@ -21,7 +21,7 @@ type UseSignupUserReturn = {
 
 export function useSignupUser(): UseSignupUserReturn {
   const router = useRouter();
-  const { isLoaded, signUp, setActive } = useSignUp();
+  const { isLoaded, signUp } = useSignUp();
   const [loading, setLoading] = useState<boolean>(false);
 
   const {
@@ -47,7 +47,6 @@ export function useSignupUser(): UseSignupUserReturn {
         signUpAttempt.status === "complete" &&
         signUpAttempt.createdSessionId
       ) {
-        await setActive({ session: signUpAttempt.createdSessionId });
         Toast.show({
           type: "success",
           text1: "Signup Successful",
