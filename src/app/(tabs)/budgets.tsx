@@ -1,9 +1,10 @@
-import { Text, View } from "react-native";
+import { Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Budgets(): React.JSX.Element {
   return (
-    <View>
+    <SafeAreaView>
       <Text>Budgets</Text>
-    </View>
+    </SafeAreaView>
   );
 }

@@ -1,12 +1,10 @@
-import { Text, View } from "react-native";
+import { Text } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index(): React.JSX.Element {
   return (
-    <View className="flex-1 items-center justify-center bg-white">
-      <Text className="text-red-500">
-        Edit app/index.tsx to edit this screen.nn
-      </Text>
-      <Text>gg</Text>
-    </View>
+    <SafeAreaView className="flex-1">
+      <Text className="">Edit app/index.tsx to edit this screen.nn</Text>
+    </SafeAreaView>
   );
 }
