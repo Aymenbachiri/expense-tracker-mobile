@@ -1,62 +1,18 @@
+import { useSignupUser } from "@/src/lib/hooks/use-signup-user";
 import { cn } from "@/src/lib/utils/utils";
-import { useSignUp } from "@clerk/clerk-expo";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
-import { z } from "zod";
-
-const signupSchema = z.object({
-  emailAddress: z.string().email("Must be a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
-});
-
-type SignupFormData = z.infer<typeof signupSchema>;
+import React from "react";
+import { Controller } from "react-hook-form";
+import {
+  ActivityIndicator,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 export default function Signup(): React.JSX.Element {
-  const router = useRouter();
-  const { isLoaded, signUp, setActive } = useSignUp();
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(false);
-
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: { emailAddress: "", password: "" },
-  });
-
-  const onSignUpPress = async (data: SignupFormData) => {
-    if (!isLoaded) return;
-    setError(null);
-    setLoading(true);
-
-    try {
-      const signUpAttempt = await signUp.create({
-        emailAddress: data.emailAddress,
-        password: data.password,
-      });
-
-      if (
-        signUpAttempt.status === "complete" &&
-        signUpAttempt.createdSessionId
-      ) {
-        await setActive({ session: signUpAttempt.createdSessionId });
-        router.replace("/");
-      } else {
-        setError("Unexpected sign-up status: " + signUpAttempt.status);
-        console.error(signUpAttempt);
-      }
-    } catch (err: any) {
-      console.error(err);
-      setError(err.errors?.[0]?.longMessage || err.message || "Sign-up failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { control, errors, handleSubmit, onSignUpPress, loading } =
+    useSignupUser();
 
   return (
     <View className="p-4">
@@ -110,7 +66,6 @@ export default function Signup(): React.JSX.Element {
           </>
         )}
       />
-      {error && <Text className="mb-3 text-red-500">{error}</Text>}
       <TouchableOpacity
         onPress={handleSubmit(onSignUpPress)}
         disabled={loading}
@@ -119,8 +74,12 @@ export default function Signup(): React.JSX.Element {
           loading ? "bg-gray-400" : "bg-blue-500",
         )}
       >
-        <Text className="flex items-center justify-center gap-3 text-center text-white">
-          {loading ? "Creating..." : "Create account"}
+        <Text className="text-center text-white">
+          {loading ? (
+            <ActivityIndicator color="white" className="pr-3" />
+          ) : (
+            "Create account"
+          )}
         </Text>
       </TouchableOpacity>
     </View>

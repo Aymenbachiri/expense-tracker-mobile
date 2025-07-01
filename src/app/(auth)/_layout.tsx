@@ -1,10 +1,9 @@
 import { useAuth } from "@clerk/clerk-expo";
-import { Stack } from "expo-router";
+import { Redirect, Stack } from "expo-router";
 
 export default function AuthLayout(): React.JSX.Element {
   const { isSignedIn } = useAuth();
-
-  // if (isSignedIn) return <Redirect href={"/(tabs)"} />;
+  if (isSignedIn) return <Redirect href={"/(tabs)"} />;
 
   return (
     <Stack screenOptions={{ headerShown: true }}>
