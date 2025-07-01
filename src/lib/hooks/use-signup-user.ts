@@ -76,11 +76,5 @@ export function useSignupUser(): UseSignupUserReturn {
     }
   };
 
-  return {
-    control,
-    errors,
-    handleSubmit,
-    onSignUpPress,
-    loading,
-  };
+  return { control, errors, handleSubmit, onSignUpPress, loading };
 }
