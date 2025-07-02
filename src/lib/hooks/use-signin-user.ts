@@ -1,4 +1,4 @@
-import { useSignIn } from "@clerk/clerk-expo";
+import { useAuth, useSignIn, useUser } from "@clerk/clerk-expo";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -21,6 +21,8 @@ type UseSigninUserReturn = {
 
 export function useSigninUser(): UseSigninUserReturn {
   const router = useRouter();
+  const { isSignedIn } = useUser();
+  const { signOut } = useAuth();
   const { isLoaded, signIn, setActive } = useSignIn();
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -38,6 +40,10 @@ export function useSigninUser(): UseSigninUserReturn {
     setLoading(true);
 
     try {
+      if (isSignedIn) {
+        await signOut();
+      }
+
       const attempt = await signIn.create({
         identifier: data.emailAddress,
         password: data.password,
@@ -45,6 +51,11 @@ export function useSigninUser(): UseSigninUserReturn {
 
       if (attempt.status === "complete" && attempt.createdSessionId) {
         await setActive({ session: attempt.createdSessionId });
+        Toast.show({
+          type: "success",
+          text1: "Signin Successful",
+          text2: "Welcome Back",
+        });
         router.replace("/(tabs)");
       } else {
         console.error("Sign-in status:", attempt.status);

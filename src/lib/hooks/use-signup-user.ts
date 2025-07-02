@@ -1,4 +1,4 @@
-import { useSignUp } from "@clerk/clerk-expo";
+import { useAuth, useSignUp } from "@clerk/clerk-expo";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -22,6 +22,7 @@ type UseSignupUserReturn = {
 export function useSignupUser(): UseSignupUserReturn {
   const router = useRouter();
   const { isLoaded, signUp } = useSignUp();
+  const { signOut } = useAuth();
   const [loading, setLoading] = useState<boolean>(false);
 
   const {
@@ -52,6 +53,7 @@ export function useSignupUser(): UseSignupUserReturn {
           text1: "Signup Successful",
           text2: "Please Signin",
         });
+        await signOut();
         router.replace("/(auth)/signin");
       } else {
         const msg = `Unexpected sign-up status: ${signUpAttempt.status}`;
