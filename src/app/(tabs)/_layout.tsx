@@ -1,14 +1,20 @@
+import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
+import { ActivityIndicator } from "react-native";
 import "../../global.css";
 
 export default function RootLayout(): React.JSX.Element {
+  const { isSignedIn, isLoaded } = useUser();
+  if (!isLoaded) return <ActivityIndicator />;
+
   return (
     <Tabs screenOptions={{ headerShown: false }}>
       <Tabs.Screen
         name="index"
         options={{
           title: "Home",
+          href: isSignedIn ? "/(tabs)" : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home" color={color} size={size} />
           ),
@@ -18,6 +24,7 @@ export default function RootLayout(): React.JSX.Element {
         name="expenses"
         options={{
           title: "Expenses",
+          href: isSignedIn ? "/(tabs)/expenses" : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="cash" color={color} size={size} />
           ),
@@ -27,6 +34,7 @@ export default function RootLayout(): React.JSX.Element {
         name="budgets"
         options={{
           title: "Budgets",
+          href: isSignedIn ? "/(tabs)/budgets" : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="wallet" color={color} size={size} />
           ),
@@ -36,6 +44,7 @@ export default function RootLayout(): React.JSX.Element {
         name="analytics"
         options={{
           title: "Analytics",
+          href: isSignedIn ? "/(tabs)/analytics" : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="analytics" color={color} size={size} />
           ),
@@ -45,6 +54,7 @@ export default function RootLayout(): React.JSX.Element {
         name="profile"
         options={{
           title: "Profile",
+          href: isSignedIn ? "/(tabs)/profile" : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person" color={color} size={size} />
           ),
