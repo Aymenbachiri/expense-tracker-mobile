@@ -1,48 +1,14 @@
-import { useRouter } from "expo-router";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { advancedFeatures } from "../components/screens/home-screen/advanced-features";
+import { features } from "../components/screens/home-screen/features";
+import { howItWorks } from "../components/screens/home-screen/how-it-works";
+import { metrics } from "../components/screens/home-screen/metrics";
+import { powerfulFeatures } from "../components/screens/home-screen/powerful-features";
+import { useHomeScreen } from "../lib/hooks/use-home-screen";
 
-type Feature = {
-  icon: string;
-  title: string;
-  description: string;
-};
-
-const features: Feature[] = [
-  {
-    icon: "📊",
-    title: "Smart Analytics",
-    description:
-      "Get detailed insights into your spending patterns with interactive charts and reports",
-  },
-  {
-    icon: "💰",
-    title: "Budget Management",
-    description:
-      "Set budgets for different categories and track your progress in real-time",
-  },
-  {
-    icon: "💳",
-    title: "Expense Tracking",
-    description:
-      "Easily log expenses with categories, photos, and recurring transaction support",
-  },
-  {
-    icon: "📈",
-    title: "Visual Reports",
-    description:
-      "View your financial data through beautiful charts and exportable reports",
-  },
-];
 export default function HomePage(): React.JSX.Element {
-  const router = useRouter();
-  const handleSignIn = () => {
-    router.push("/(auth)/signin");
-  };
-
-  const handleSignUp = () => {
-    router.push("/(auth)/signup");
-  };
+  const { handleSignIn, handleSignUp } = useHomeScreen();
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -91,18 +57,13 @@ export default function HomePage(): React.JSX.Element {
           </View>
         </View>
 
-        {/* How It Works */}
         <View className="bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
           <Text className="mb-8 text-center text-2xl font-bold text-gray-800 sm:text-3xl">
             How It Works
           </Text>
           <View className="space-y-4">
-            {[
-              "Track Expenses: Log daily expenses with categories and photos",
-              "Set Budgets: Create budgets for different categories and time periods",
-              "Analyze & Optimize: Get insights and make informed decisions",
-            ].map((step, i) => (
-              <View key={i} className="flex-row items-center">
+            {howItWorks.map((step, i) => (
+              <View key={i} className="my-3 flex-row items-center sm:my-0">
                 <View className="mr-4 h-6 w-6 items-center justify-center rounded-full bg-blue-500 sm:h-8 sm:w-8">
                   <Text className="text-sm font-bold text-white sm:text-base">
                     {i + 1}
@@ -117,17 +78,12 @@ export default function HomePage(): React.JSX.Element {
           </View>
         </View>
 
-        {/* Metrics */}
         <View className="px-4 py-12 sm:px-6 lg:px-8">
           <Text className="mb-8 text-center text-2xl font-bold text-gray-800 sm:text-3xl">
             Join Thousands of Smart Savers
           </Text>
           <View className="flex-row flex-wrap justify-around">
-            {[
-              { value: "50K+", label: "Active Users", color: "text-blue-500" },
-              { value: "$2M+", label: "Money Saved", color: "text-green-500" },
-              { value: "4.8★", label: "App Rating", color: "text-purple-500" },
-            ].map((item, idx) => (
+            {metrics.map((item, idx) => (
               <View key={idx} className="mb-6 w-1/2 items-center sm:w-1/3">
                 <Text
                   className={`text-2xl font-bold sm:text-3xl ${item.color}`}
@@ -142,22 +98,12 @@ export default function HomePage(): React.JSX.Element {
           </View>
         </View>
 
-        {/* Powerful Features */}
         <View className="bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
           <Text className="mb-8 text-center text-2xl font-bold text-gray-800 sm:text-3xl">
             Powerful Features at Your Fingertips
           </Text>
           <View className="flex-row flex-wrap justify-between">
-            {[
-              {
-                icon: "📱",
-                title: "Dashboard",
-                desc: "Overview of your finances",
-              },
-              { icon: "📋", title: "Expenses", desc: "Track all transactions" },
-              { icon: "🎯", title: "Budgets", desc: "Set spending limits" },
-              { icon: "📊", title: "Analytics", desc: "Detailed insights" },
-            ].map((card, idx) => (
+            {powerfulFeatures.map((card, idx) => (
               <View
                 key={idx}
                 className="mb-4 w-full items-center rounded-xl bg-white p-4 sm:w-1/2 lg:w-1/4"
@@ -177,14 +123,7 @@ export default function HomePage(): React.JSX.Element {
               Advanced Features Include:
             </Text>
             <View className="space-y-2">
-              {[
-                "Category-wise expense tracking with custom icons",
-                "Photo attachments for receipts",
-                "Recurring expense automation",
-                "Budget alerts and notifications",
-                "Exportable PDF reports",
-                "Advanced search and filtering",
-              ].map((feat, idx) => (
+              {advancedFeatures.map((feat, idx) => (
                 <View key={idx} className="flex-row items-center">
                   <Text className="mr-2 text-green-500">✓</Text>
                   <Text className="flex-1 text-sm text-gray-600 sm:text-base">
@@ -196,7 +135,6 @@ export default function HomePage(): React.JSX.Element {
           </View>
         </View>
 
-        {/* Call to Action */}
         <View className="px-4 pb-12 sm:px-6 lg:px-8">
           <View className="items-center rounded-2xl bg-gradient-to-r from-blue-500 to-purple-600 p-8">
             <Text className="mb-4 text-center text-xl font-bold text-gray-700 sm:text-2xl">
@@ -227,7 +165,6 @@ export default function HomePage(): React.JSX.Element {
           </View>
         </View>
 
-        {/* Footer */}
         <View className="bg-gray-900 px-4 py-8 sm:px-6 lg:px-8">
           <View className="items-center">
             <View className="mb-4 flex-row items-center">
@@ -237,7 +174,7 @@ export default function HomePage(): React.JSX.Element {
             <Text className="mb-4 text-center text-sm text-gray-400 sm:text-base">
               Your privacy is our priority. All data is encrypted and secure.
             </Text>
-            <View className="flex-row space-x-6">
+            <View className="flex-row gap-4 space-x-6">
               <TouchableOpacity>
                 <Text className="text-sm text-gray-400">Privacy Policy</Text>
               </TouchableOpacity>
