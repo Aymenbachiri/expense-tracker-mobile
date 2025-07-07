@@ -2,11 +2,17 @@ import { useUser } from "@clerk/clerk-expo";
 import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import "../../global.css";
 
 export default function RootLayout(): React.JSX.Element {
   const { isSignedIn, isLoaded } = useUser();
-  if (!isLoaded) return <ActivityIndicator />;
+  if (!isLoaded)
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center">
+        <ActivityIndicator size="large" />
+      </SafeAreaView>
+    );
 
   return (
     <Tabs screenOptions={{ headerShown: false }}>

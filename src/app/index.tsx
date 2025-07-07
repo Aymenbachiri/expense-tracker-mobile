@@ -6,6 +6,7 @@ import { howItWorks } from "../components/screens/home-screen/how-it-works";
 import { metrics } from "../components/screens/home-screen/metrics";
 import { powerfulFeatures } from "../components/screens/home-screen/powerful-features";
 import { useHomeScreen } from "../lib/hooks/use-home-screen";
+import { cn } from "../lib/utils/utils";
 
 export default function HomePage(): React.JSX.Element {
   const { handleSignIn, handleSignUp } = useHomeScreen();
@@ -86,7 +87,7 @@ export default function HomePage(): React.JSX.Element {
             {metrics.map((item, idx) => (
               <View key={idx} className="mb-6 w-1/2 items-center sm:w-1/3">
                 <Text
-                  className={`text-2xl font-bold sm:text-3xl ${item.color}`}
+                  className={cn("text-2xl font-bold sm:text-3xl", item.color)}
                 >
                   {item.value}
                 </Text>
