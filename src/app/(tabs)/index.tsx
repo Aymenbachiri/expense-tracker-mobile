@@ -1,5 +1,5 @@
 import { API_URL } from "@/src/lib/config/config";
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/clerk-expo";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -54,24 +54,27 @@ type ExpenseItem = {
 };
 
 export default function Index(): React.JSX.Element {
-  const { user } = useUser();
-  const { getToken } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  console.log("user_email: ", user?.emailAddresses[0].emailAddress);
-
-  async function logToken() {
-    const token = await getToken();
-    console.log("token: ", token);
-  }
+  const { getToken, isSignedIn } = useAuth();
 
   async function fetchData() {
     try {
-      const token = await getToken({ template: "public" });
       setError(null);
+
+      if (!isSignedIn) {
+        setError("User is not signed in");
+        return;
+      }
+
+      const token = await getToken();
+      if (!token) {
+        setError("Unable to get authentication token");
+        return;
+      }
 
       const currentDate = new Date();
       const startOfMonth = new Date(
@@ -88,19 +91,13 @@ export default function Index(): React.JSX.Element {
       const startDateStr = startOfMonth.toISOString().split("T")[0];
       const endDateStr = endOfMonth.toISOString().split("T")[0];
 
-      console.log("API_URL:", API_URL);
-      console.log("token: ", token);
-
-      console.log("Fetching data with dates:", { startDateStr, endDateStr });
-
-      const analyticsUrl = `${API_URL}/api/analytics/summary?startDate=${startDateStr}&endDate=${endDateStr}&categoryId=all`;
+      const analyticsUrl =
+        `${API_URL}/api/analytics/summary?startDate=${startDateStr}` +
+        `&endDate=${endDateStr}`;
       const expensesUrl = `${API_URL}/api/expenses`;
 
-      console.log("Analytics URL:", analyticsUrl);
-      console.log("Expenses URL:", expensesUrl);
-
       const timeoutPromise = (ms: number) =>
-        new Promise((_, reject) =>
+        new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error("Request timeout")), ms),
         );
 
@@ -111,104 +108,93 @@ export default function Index(): React.JSX.Element {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
-              authorization: `Bearer ${token}`,
+              Authorization: `Bearer ${token}`,
             },
           }),
           timeoutPromise(timeout),
         ]);
       };
 
-      let sumRes: Response;
-      let expRes: Response;
-
+      let summaryData: Summary | null = null;
       try {
-        console.log("Making analytics request...");
-        sumRes = (await fetchWithTimeout(analyticsUrl)) as Response;
-        console.log("Analytics response status:", sumRes.status);
-        console.log(
-          "Analytics response headers:",
-          Object.fromEntries(sumRes.headers.entries()),
-        );
+        const sumRes = (await fetchWithTimeout(analyticsUrl)) as Response;
+
+        if (sumRes.ok) {
+          const sumJson = await sumRes.json();
+          console.log("Analytics response:", sumJson);
+          const raw = sumJson.success ? sumJson.data : sumJson;
+          summaryData = raw as Summary;
+        } else {
+          const errorText = await sumRes.text();
+          console.warn(
+            `Analytics API returned non-OK: ${sumRes.status}`,
+            errorText,
+          );
+        }
       } catch (analyticsError) {
-        console.error("Analytics request failed:", analyticsError);
-        throw new Error(
-          `Analytics API connection failed: ${analyticsError.message}`,
-        );
+        console.warn("Analytics fetch failed:", analyticsError);
       }
 
-      try {
-        console.log("Making expenses request...");
-        expRes = (await fetchWithTimeout(expensesUrl)) as Response;
-        console.log("Expenses response status:", expRes.status);
-        console.log(
-          "Expenses response headers:",
-          Object.fromEntries(expRes.headers.entries()),
-        );
-      } catch (expensesError) {
-        console.error("Expenses request failed:", expensesError);
-        throw new Error(
-          `Expenses API connection failed: ${expensesError.message}`,
-        );
-      }
-
-      if (!sumRes.ok) {
-        const errorText = await sumRes.text();
-        console.error("Analytics API error response:", errorText);
-        throw new Error(`Analytics API error: ${sumRes.status} - ${errorText}`);
-      }
-
+      const expRes = (await fetchWithTimeout(expensesUrl)) as Response;
       if (!expRes.ok) {
-        const errorText = await expRes.text();
-        console.error("Expenses API error response:", errorText);
-        throw new Error(`Expenses API error: ${expRes.status} - ${errorText}`);
+        const errText = await expRes.text();
+        throw new Error(`Expenses API error: ${expRes.status} - ${errText}`);
       }
-
-      const sumJson = await sumRes.json();
       const expJson = await expRes.json();
-
-      console.log("Analytics response:", JSON.stringify(sumJson, null, 2));
-      console.log("Expenses response:", JSON.stringify(expJson, null, 2));
-
-      if (!sumJson || typeof sumJson !== "object") {
-        throw new Error("Invalid response format from analytics API");
-      }
-
-      if (!expJson || typeof expJson !== "object") {
-        throw new Error("Invalid response format from expenses API");
-      }
-
-      const summaryData = sumJson.success ? sumJson.data : sumJson;
+      console.log("Expenses response:", expJson);
       const expensesData = expJson.success ? expJson.data : expJson;
 
-      if (!summaryData) {
-        throw new Error("No data received from analytics API");
-      }
-
-      setSummary(summaryData as Summary);
-
-      const recentExpenses = summaryData.recentExpenses || [];
-      const recent: ExpenseItem[] = recentExpenses.map((e: any) => ({
-        id: e._id || e.id,
-        title: e.description || e.title || "Unknown",
-        amount: e.amount || 0,
-        date: e.date || new Date().toISOString(),
-      }));
-
-      setExpenses(recent);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-      setError(
-        error instanceof Error ? error.message : "An unknown error occurred",
+      setSummary(
+        summaryData ?? {
+          totalExpenses: 0,
+          totalCount: 0,
+          avgExpense: 0,
+          expensesByCategory: [],
+          recentExpenses: [],
+          budgetComparison: [],
+        },
       );
+
+      if (
+        summaryData?.recentExpenses &&
+        summaryData.recentExpenses.length > 0
+      ) {
+        const recent: ExpenseItem[] = summaryData.recentExpenses.map(
+          (e: any) => ({
+            id: e._id,
+            title: e.description,
+            amount: e.amount,
+            date: e.date,
+          }),
+        );
+        setExpenses(recent);
+      } else if (Array.isArray(expensesData)) {
+        const fallback = (expensesData as any[]).slice(0, 10).map((e) => ({
+          id: e._id || e.id,
+          title: e.description || "Unknown",
+          amount: e.amount,
+          date: e.date,
+        }));
+        setExpenses(fallback);
+      } else {
+        setExpenses([]);
+      }
+    } catch (err) {
+      console.error("Error fetching data:", err);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    fetchData();
-    logToken();
-  }, []);
+    if (isSignedIn) {
+      fetchData();
+    } else {
+      setLoading(false);
+      setError("Please sign in to view your expenses");
+    }
+  }, [isSignedIn]);
 
   if (loading) {
     return (
@@ -233,21 +219,25 @@ export default function Index(): React.JSX.Element {
   }
 
   const screenWidth = Dimensions.get("window").width - 32;
-  const chartData = summary
-    ? {
-        labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-        datasets: [
-          {
-            data: [
-              summary.totalExpenses * 0.25,
-              summary.totalExpenses * 0.5,
-              summary.totalExpenses * 0.75,
-              summary.totalExpenses,
-            ],
-          },
-        ],
-      }
-    : { labels: [], datasets: [] };
+  const chartData =
+    summary && summary.totalExpenses > 0
+      ? {
+          labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+          datasets: [
+            {
+              data: [
+                summary.totalExpenses * 0.25,
+                summary.totalExpenses * 0.5,
+                summary.totalExpenses * 0.75,
+                summary.totalExpenses,
+              ],
+            },
+          ],
+        }
+      : {
+          labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+          datasets: [{ data: [0, 0, 0, 0] }],
+        };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50">
@@ -257,7 +247,7 @@ export default function Index(): React.JSX.Element {
             Total Expenses This Month
           </Text>
           <Text className="mt-2 text-2xl">
-            ${summary?.totalExpenses?.toFixed(2) || "0.00"}
+            ${summary?.totalExpenses.toFixed(2) || "0.00"}
           </Text>
         </View>
 
