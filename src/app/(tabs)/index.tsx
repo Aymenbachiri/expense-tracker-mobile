@@ -13,6 +13,7 @@ import {
 import { LineChart } from "react-native-chart-kit";
 import { ProgressBar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 
 type Summary = {
   totalExpenses: number;
@@ -66,13 +67,17 @@ export default function Index(): React.JSX.Element {
       setError(null);
 
       if (!isSignedIn) {
-        setError("User is not signed in");
+        const msg = "User is not signed in";
+        setError(msg);
+        Toast.show({ type: "error", text1: "Auth Error", text2: msg });
         return;
       }
 
       const token = await getToken();
       if (!token) {
-        setError("Unable to get authentication token");
+        const msg = "Unable to get authentication token";
+        setError(msg);
+        Toast.show({ type: "error", text1: "Auth Error", text2: msg });
         return;
       }
 
@@ -121,27 +126,38 @@ export default function Index(): React.JSX.Element {
 
         if (sumRes.ok) {
           const sumJson = await sumRes.json();
-          console.log("Analytics response:", sumJson);
           const raw = sumJson.success ? sumJson.data : sumJson;
           summaryData = raw as Summary;
         } else {
           const errorText = await sumRes.text();
-          console.warn(
-            `Analytics API returned non-OK: ${sumRes.status}`,
-            errorText,
-          );
+          Toast.show({
+            type: "error",
+            text1: "Analytics Error",
+            text2: `Failed to fetch analytics: ${errorText}`,
+          });
         }
       } catch (analyticsError) {
-        console.warn("Analytics fetch failed:", analyticsError);
+        Toast.show({
+          type: "error",
+          text1: "Analytics Error",
+          text2:
+            analyticsError instanceof Error
+              ? analyticsError.message
+              : String(analyticsError),
+        });
       }
 
       const expRes = (await fetchWithTimeout(expensesUrl)) as Response;
       if (!expRes.ok) {
         const errText = await expRes.text();
+        Toast.show({
+          type: "error",
+          text1: "Expenses Error",
+          text2: `Failed to fetch expenses: ${expRes.status} - ${errText}`,
+        });
         throw new Error(`Expenses API error: ${expRes.status} - ${errText}`);
       }
       const expJson = await expRes.json();
-      console.log("Expenses response:", expJson);
       const expensesData = expJson.success ? expJson.data : expJson;
 
       setSummary(
@@ -180,8 +196,12 @@ export default function Index(): React.JSX.Element {
         setExpenses([]);
       }
     } catch (err) {
-      console.error("Error fetching data:", err);
       setError(err instanceof Error ? err.message : String(err));
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: err instanceof Error ? err.message : "An unknown error occurred",
+      });
     } finally {
       setLoading(false);
     }
@@ -193,6 +213,11 @@ export default function Index(): React.JSX.Element {
     } else {
       setLoading(false);
       setError("Please sign in to view your expenses");
+      Toast.show({
+        type: "info",
+        text1: "Sign In Required",
+        text2: "Please sign in to view your expenses",
+      });
     }
   }, [isSignedIn]);
 
