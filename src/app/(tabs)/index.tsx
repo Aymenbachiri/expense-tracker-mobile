@@ -1,4 +1,6 @@
+import AddExpenseModal from "@/src/components/modals/add-expense-modal";
 import { useAnalyticsSummary } from "@/src/lib/hooks/use-analytics-summary";
+import { useState } from "react";
 import {
   ActivityIndicator,
   Dimensions,
@@ -13,8 +15,16 @@ import { ProgressBar } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function Index(): React.JSX.Element {
+  const [showAddExpenseModal, setShowAddExpenseModal] = useState(false);
   const { loading, error, fetchData, expenses, summary } =
     useAnalyticsSummary();
+
+  const handleAddExpenseSuccess = () => {
+    // Refresh the data after successful expense addition
+    fetchData();
+  };
+
+  const onClose = () => setShowAddExpenseModal(false);
 
   if (loading) {
     return (
@@ -95,7 +105,10 @@ export default function Index(): React.JSX.Element {
         </View>
 
         <View className="mb-4 flex-row justify-between">
-          <TouchableOpacity className="mr-2 flex-1 items-center rounded-full bg-blue-600 py-3 shadow">
+          <TouchableOpacity
+            onPress={() => setShowAddExpenseModal(true)}
+            className="mr-2 flex-1 items-center rounded-full bg-blue-600 py-3 shadow"
+          >
             <Text className="font-semibold text-white">Add Expense</Text>
           </TouchableOpacity>
           <TouchableOpacity className="ml-2 flex-1 items-center rounded-full bg-green-600 py-3 shadow">
@@ -144,6 +157,12 @@ export default function Index(): React.JSX.Element {
           )}
         </View>
       </ScrollView>
+
+      <AddExpenseModal
+        visible={showAddExpenseModal}
+        onClose={onClose}
+        onSuccess={handleAddExpenseSuccess}
+      />
     </SafeAreaView>
   );
 }
