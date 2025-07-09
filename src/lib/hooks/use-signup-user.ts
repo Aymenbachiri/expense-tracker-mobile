@@ -20,10 +20,10 @@ type UseSignupUserReturn = {
 };
 
 export function useSignupUser(): UseSignupUserReturn {
-  const router = useRouter();
+  const [loading, setLoading] = useState<boolean>(false);
   const { isLoaded, signUp } = useSignUp();
   const { signOut } = useAuth();
-  const [loading, setLoading] = useState<boolean>(false);
+  const router = useRouter();
 
   const {
     control,

@@ -51,10 +51,10 @@ type UseAnalyticsSummaryReturn = {
 };
 
 export function useAnalyticsSummary(): UseAnalyticsSummaryReturn {
-  const [loading, setLoading] = useState<boolean>(true);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
   const { getToken, isSignedIn } = useAuth();
 
   async function fetchData() {

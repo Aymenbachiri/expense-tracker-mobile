@@ -1,10 +1,13 @@
 import { API_URL } from "@/src/lib/config/config";
 import { useAuth } from "@clerk/clerk-expo";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { Picker } from "@react-native-picker/picker";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Modal,
+  Platform,
   ScrollView,
   Text,
   TextInput,
@@ -12,11 +15,9 @@ import {
   View,
 } from "react-native";
 
-type Props = {
-  visible: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-};
+type Props = { visible: boolean; onClose: () => void; onSuccess: () => void };
+
+type CategoryResponse = { data: { _id: string; name: string }[] };
 
 export default function AddExpenseModal({
   visible,
@@ -30,8 +31,9 @@ export default function AddExpenseModal({
     category: "",
     date: new Date().toISOString(),
   });
-  const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [categories, setCategories] = useState<CategoryResponse>({ data: [] });
   const { getToken } = useAuth();
 
   async function getCategories() {
@@ -47,12 +49,11 @@ export default function AddExpenseModal({
       const result = await response.json();
       setCategories(result);
     } catch (error) {
-      console.error(error);
+      console.error("failed to get Categories: ", error);
     }
   }
 
   const handleSubmit = async () => {
-    // Basic validation
     if (!formData.amount || !formData.description || !formData.category) {
       Alert.alert("Error", "Please fill in all required fields");
       return;
@@ -84,6 +85,17 @@ export default function AddExpenseModal({
 
       const result = await response.json();
 
+      let msg = "Failed to add expense";
+      if (typeof result.message === "string") {
+        msg = result.message;
+      } else if (Array.isArray(result.message)) {
+        msg = result.message
+          .map((e: any) =>
+            typeof e === "string" ? e : e.message || JSON.stringify(e),
+          )
+          .join("; ");
+      }
+
       if (result.success) {
         Alert.alert("Success", "Expense added successfully");
         setFormData({
@@ -96,7 +108,8 @@ export default function AddExpenseModal({
         onSuccess();
         onClose();
       } else {
-        Alert.alert("Error", result.message || "Failed to add expense");
+        Alert.alert("Failed to add expense", msg);
+        console.error("Failed to add expense", msg);
       }
     } catch (error) {
       Alert.alert("Error", "Failed to add expense. Please try again.");
@@ -106,8 +119,16 @@ export default function AddExpenseModal({
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
+  const formatDate = (dateString: string): string => {
+    const d = new Date(dateString);
+    return d.toLocaleDateString();
+  };
+
+  const onChangeDate = (_event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      setFormData({ ...formData, date: selectedDate.toISOString() });
+    }
   };
 
   useEffect(() => {
@@ -169,23 +190,28 @@ export default function AddExpenseModal({
               <Text className="mb-2 text-sm font-medium text-gray-700">
                 Category *
               </Text>
-              <TouchableOpacity
-                className="rounded-lg border border-gray-300 px-3 py-2"
-                onPress={() => {
-                  // Implement category picker modal or dropdown
-                  Alert.alert(
-                    "Category Selection",
-                    "Implement category picker",
-                  );
-                }}
-                disabled={loading}
-              >
-                <Text
-                  className={`text-base ${formData.category ? "text-gray-800" : "text-gray-500"}`}
+              <View className="rounded-lg border border-gray-300">
+                <Picker
+                  selectedValue={formData.category}
+                  onValueChange={(itemValue) =>
+                    setFormData({ ...formData, category: itemValue })
+                  }
+                  enabled={!loading}
                 >
-                  {formData.category ? "Selected Category" : "Select Category"}
-                </Text>
-              </TouchableOpacity>
+                  <Picker.Item label="Select a category..." value="" />
+                  {categories ? (
+                    categories.data.map((cat) => (
+                      <Picker.Item
+                        key={cat._id}
+                        label={cat.name}
+                        value={cat._id}
+                      />
+                    ))
+                  ) : (
+                    <ActivityIndicator size="small" />
+                  )}
+                </Picker>
+              </View>
             </View>
 
             {/* Date Selection */}
@@ -195,16 +221,21 @@ export default function AddExpenseModal({
               </Text>
               <TouchableOpacity
                 className="rounded-lg border border-gray-300 px-3 py-2"
-                onPress={() => {
-                  // Implement date picker
-                  Alert.alert("Date Picker", "Implement date picker");
-                }}
+                onPress={() => setShowDatePicker(true)}
                 disabled={loading}
               >
                 <Text className="text-base text-gray-800">
                   {formatDate(formData.date)}
                 </Text>
               </TouchableOpacity>
+              {showDatePicker && (
+                <DateTimePicker
+                  value={new Date(formData.date)}
+                  mode="date"
+                  display="default"
+                  onChange={onChangeDate}
+                />
+              )}
             </View>
 
             {/* Notes Input */}
