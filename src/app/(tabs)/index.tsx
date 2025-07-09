@@ -1,4 +1,5 @@
 import { API_URL } from "@/src/lib/config/config";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -53,16 +54,25 @@ type ExpenseItem = {
 };
 
 export default function Index(): React.JSX.Element {
+  const { user } = useUser();
+  const { getToken } = useAuth();
   const [loading, setLoading] = useState<boolean>(true);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [expenses, setExpenses] = useState<ExpenseItem[]>([]);
   const [error, setError] = useState<string | null>(null);
 
+  console.log("user_email: ", user?.emailAddresses[0].emailAddress);
+
+  async function logToken() {
+    const token = await getToken();
+    console.log("token: ", token);
+  }
+
   async function fetchData() {
     try {
+      const token = await getToken({ template: "public" });
       setError(null);
 
-      // Get current month dates for the analytics summary
       const currentDate = new Date();
       const startOfMonth = new Date(
         currentDate.getFullYear(),
@@ -79,16 +89,16 @@ export default function Index(): React.JSX.Element {
       const endDateStr = endOfMonth.toISOString().split("T")[0];
 
       console.log("API_URL:", API_URL);
+      console.log("token: ", token);
+
       console.log("Fetching data with dates:", { startDateStr, endDateStr });
 
-      // Test basic connectivity first
       const analyticsUrl = `${API_URL}/api/analytics/summary?startDate=${startDateStr}&endDate=${endDateStr}&categoryId=all`;
       const expensesUrl = `${API_URL}/api/expenses`;
 
       console.log("Analytics URL:", analyticsUrl);
       console.log("Expenses URL:", expensesUrl);
 
-      // Add timeout and better error handling
       const timeoutPromise = (ms: number) =>
         new Promise((_, reject) =>
           setTimeout(() => reject(new Error("Request timeout")), ms),
@@ -101,6 +111,7 @@ export default function Index(): React.JSX.Element {
             headers: {
               "Content-Type": "application/json",
               Accept: "application/json",
+              authorization: `Bearer ${token}`,
             },
           }),
           timeoutPromise(timeout),
@@ -158,7 +169,6 @@ export default function Index(): React.JSX.Element {
       console.log("Analytics response:", JSON.stringify(sumJson, null, 2));
       console.log("Expenses response:", JSON.stringify(expJson, null, 2));
 
-      // Check if the responses have the expected structure
       if (!sumJson || typeof sumJson !== "object") {
         throw new Error("Invalid response format from analytics API");
       }
@@ -167,7 +177,6 @@ export default function Index(): React.JSX.Element {
         throw new Error("Invalid response format from expenses API");
       }
 
-      // Handle both success/data format and direct data format
       const summaryData = sumJson.success ? sumJson.data : sumJson;
       const expensesData = expJson.success ? expJson.data : expJson;
 
@@ -177,7 +186,6 @@ export default function Index(): React.JSX.Element {
 
       setSummary(summaryData as Summary);
 
-      // Handle recent expenses mapping with proper null checks
       const recentExpenses = summaryData.recentExpenses || [];
       const recent: ExpenseItem[] = recentExpenses.map((e: any) => ({
         id: e._id || e.id,
@@ -199,6 +207,7 @@ export default function Index(): React.JSX.Element {
 
   useEffect(() => {
     fetchData();
+    logToken();
   }, []);
 
   if (loading) {
@@ -256,7 +265,7 @@ export default function Index(): React.JSX.Element {
           <Text className="mb-2 text-lg font-semibold">Budget Progress</Text>
           {summary?.budgetComparison && summary.budgetComparison.length > 0 ? (
             summary.budgetComparison.map((b) => {
-              const progress = Math.min(b.spent / b.budget.amount, 1); // Cap at 1 for progress bar
+              const progress = Math.min(b.spent / b.budget.amount, 1);
               return (
                 <View key={b.budget._id} className="mb-3">
                   <Text>
